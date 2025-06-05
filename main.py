@@ -21,29 +21,32 @@ bot = telebot.TeleBot(API_TOKEN)
 media_group_buffers = {}
 last_media_time = {}
 
-# === Flask App for Webhook ===
+# === Flask App ===
 app = Flask(__name__)
 
-@app.route('/')
+
+@app.route('/', methods=['GET'])
 def home():
     return "🤖 Bot is alive!"
 
-@app.route(f"/{API_TOKEN}", methods=["POST"])
+
+@app.route('/', methods=['POST'])
 def webhook():
-    json_string = request.get_data().decode("utf-8")
+    json_string = request.get_data().decode('utf-8')
     update = telebot.types.Update.de_json(json_string)
     bot.process_new_updates([update])
-    return '', 200
+    return 'OK', 200
 
 
-def set_webhook():
-    webhook_url = f"https://{os.environ.get('APP_URL')}/{API_TOKEN}"
-    bot.remove_webhook()
-    time.sleep(1)
-    bot.set_webhook(url=webhook_url)
+def run_flask():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 
 
-# === Stats Handling ===
+def keep_alive():
+    Thread(target=run_flask).start()
+
+
+# === Stats Functions ===
 def load_stats():
     if not os.path.exists(STATS_FILE):
         return {
@@ -54,9 +57,11 @@ def load_stats():
     with open(STATS_FILE, 'r') as f:
         return json.load(f)
 
+
 def save_stats(stats):
     with open(STATS_FILE, 'w') as f:
         json.dump(stats, f)
+
 
 def update_user_stats(user_id):
     stats = load_stats()
@@ -70,6 +75,7 @@ def update_user_stats(user_id):
         stats['monthly_users'][month].append(str(user_id))
     save_stats(stats)
 
+
 def get_stats():
     stats = load_stats()
     month = datetime.now().strftime("%Y-%m")
@@ -79,7 +85,6 @@ def get_stats():
     return total, monthly, new_this_month
 
 
-# === User Subscription Check ===
 def is_user_subscribed(user_id):
     try:
         member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
@@ -87,8 +92,6 @@ def is_user_subscribed(user_id):
     except:
         return False
 
-
-# === Handlers ===
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
@@ -116,6 +119,7 @@ def handle_start(message):
         "- وێنە بنێرە تاکو بیکەم بە فایلێکی پی دی ئێف")
     bot.send_message(message.chat.id, welcome_text, reply_markup=kb)
 
+
 @bot.message_handler(commands=['info'])
 def handle_info(message):
     if message.from_user.id != BOT_OWNER_ID:
@@ -126,6 +130,7 @@ def handle_info(message):
                   f"- 📅 بەکارهێنەری ئەم مانگە: {monthly}\n"
                   f"- 🆕 بەکارهێنەری نوێی ئەم مانگە: {new_this_month}")
     bot.send_message(message.chat.id, stats_text)
+
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
@@ -146,6 +151,7 @@ def handle_photo(message):
         bot.send_message(chat_id, "🖼 وێنەی یەکەم وەرگیرا")
         process_images_to_pdf(chat_id, [message.photo[-1].file_id])
 
+
 def media_group_watcher():
     while True:
         time.sleep(2)
@@ -159,6 +165,7 @@ def media_group_watcher():
             last_media_time.pop(group_id, None)
             file_ids = [m.photo[-1].file_id for m in msgs]
             process_images_to_pdf(msgs[0].chat.id, file_ids)
+
 
 def process_images_to_pdf(chat_id, file_ids):
     try:
@@ -188,6 +195,7 @@ def process_images_to_pdf(chat_id, file_ids):
     except Exception:
         send_error(chat_id)
 
+
 @bot.message_handler(content_types=['document'])
 def handle_pdf(message):
     chat_id = message.chat.id
@@ -216,6 +224,7 @@ def handle_pdf(message):
     except Exception:
         send_error(chat_id)
 
+
 def send_error(chat_id):
     kb = types.InlineKeyboardMarkup()
     kb.add(
@@ -225,6 +234,7 @@ def send_error(chat_id):
                      "⚠ ببورە کێشەیەکی تەکنیکی هەیە لە بۆتەکە",
                      reply_markup=kb)
 
+
 @bot.message_handler(func=lambda m: True)
 def handle_other_messages(message):
     if message.text != "/start" and is_user_subscribed(message.from_user.id):
@@ -232,8 +242,6 @@ def handle_other_messages(message):
                          "🔄 تکایە وێنە یاخود فایلی پی دی ئێف بنێرە")
 
 
-# === Start Everything ===
-if __name__ == "__main__":
-    threading.Thread(target=media_group_watcher, daemon=True).start()
-    set_webhook()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+# === START ===
+keep_alive()
+threading.Thread(target=media_group_watcher, daemon=True).start()
