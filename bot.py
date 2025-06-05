@@ -26,7 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # /info command handler
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    await update.message.reply_text(f"Hello, {user.first_name}! This is your info command.")
+    await update.message.reply_text(f"Hi, {user.first_name}! This is your info command.")
 
 # Echo all other text messages
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
