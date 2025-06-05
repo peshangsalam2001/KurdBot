@@ -26,7 +26,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "🤖 Bot is alive!"
+    return "🤖 Botz is alive!"
 
 @app.route(f"/{API_TOKEN}", methods=["POST"])
 def webhook():
