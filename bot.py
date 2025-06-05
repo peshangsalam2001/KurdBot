@@ -6,7 +6,7 @@ import uvicorn
 
 TOKEN = os.getenv("7921062029:AAECf80Pj4mtaPJS5TbR2Nl4qx3uSQNZsXo")
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://yourapp.scalingo.io/webhook/<token>
+WEBHOOK_URL = os.getenv("https://peshangtest.osc-fr1.scalingo.io/")  # e.g. https://yourapp.scalingo.io/webhook/<token>
 
 if not TOKEN or not WEBHOOK_URL:
     raise RuntimeError("BOT_TOKEN and WEBHOOK_URL env variables must be set")
